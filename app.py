@@ -6,9 +6,11 @@ import numpy as np
 import mediapipe as mp
 from keras.models import load_model
 import webbrowser
+import asyncio
 
 # Load model and labels
 model = load_model("model.h5")
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])  # Compile the model
 label = np.load("labels.npy")
 holistic = mp.solutions.holistic
 hands = mp.solutions.hands
@@ -95,10 +97,18 @@ class EmotionProcessor(VideoProcessorBase):
 lang = st.text_input("Language")
 singer = st.text_input("Singer")
 
+# Function to handle WebRTC lifecycle
+def start_webrtc_streamer():
+    try:
+        webrtc_streamer(key="unique_emotion_stream", desired_playing_state=True,
+                        video_processor_factory=EmotionProcessor)
+    except Exception as e:
+        st.error(f"Error starting WebRTC stream: {str(e)}")
+        print(f"Error: {str(e)}")
+
 # Conditionally run the WebRTC streamer
 if lang and singer and st.session_state["run"] != "false":
-    webrtc_streamer(key="unique_emotion_stream", desired_playing_state=True,
-                    video_processor_factory=EmotionProcessor)
+    start_webrtc_streamer()
 
 # Button to recommend songs
 btn = st.button("Recommend me songs")
