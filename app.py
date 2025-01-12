@@ -7,14 +7,9 @@ import mediapipe as mp
 from keras.models import load_model
 import webbrowser
 
-# Load model and labels with error handling
-try:
-    model = load_model("model.h5")
-    label = np.load("labels.npy")
-except Exception as e:
-    st.error(f"Error loading model or labels: {str(e)}")
-    raise e  # Ensure the program stops if loading fails
-
+# Load model and labels
+model = load_model("model.h5")
+label = np.load("labels.npy")
 holistic = mp.solutions.holistic
 hands = mp.solutions.hands
 holis = holistic.Holistic()
@@ -27,12 +22,11 @@ st.header("Emotion Based Music Recommender")
 if "run" not in st.session_state:
     st.session_state["run"] = "true"
 
-# Load emotion from file or set default, with None check
+# Load emotion from file or set default
 try:
     emotion = np.load("emotion.npy")[0]
-except Exception as e:
+except:
     emotion = ""
-    st.warning(f"Error loading emotion data: {str(e)}")
 
 # Set the session state based on emotion
 if not emotion:
@@ -42,10 +36,6 @@ else:
 
 class EmotionProcessor(VideoProcessorBase):
     def recv(self, frame):
-        if frame is None:
-            st.error("No frame received from the webcam.")
-            return None
-
         frm = frame.to_ndarray(format="bgr24")
 
         ##############################
@@ -83,18 +73,13 @@ class EmotionProcessor(VideoProcessorBase):
             lst = np.array(lst).reshape(1, -1)
 
             # Make prediction
-            try:
-                pred = label[np.argmax(model.predict(lst))]
-                print(pred)
-                cv2.putText(frm, pred, (50, 50), cv2.FONT_ITALIC, 1, (255, 0, 0), 2)
+            pred = label[np.argmax(model.predict(lst))]
+            print(pred)
+            cv2.putText(frm, pred, (50, 50), cv2.FONT_ITALIC, 1, (255, 0, 0), 2)
 
-                # Save emotion prediction to file
-                np.save("emotion.npy", np.array([pred]))
-            except Exception as e:
-                st.error(f"Error during emotion prediction: {str(e)}")
-        else:
-            st.warning("No face landmarks detected.")
-        
+            # Save emotion prediction to file
+            np.save("emotion.npy", np.array([pred]))
+
         # Draw landmarks on the frame
         drawing.draw_landmarks(frm, res.face_landmarks, holistic.FACEMESH_TESSELATION,
                                landmark_drawing_spec=drawing.DrawingSpec(color=(0, 0, 255), thickness=-1, circle_radius=1),
@@ -103,6 +88,7 @@ class EmotionProcessor(VideoProcessorBase):
         drawing.draw_landmarks(frm, res.right_hand_landmarks, hands.HAND_CONNECTIONS)
 
         ##############################
+
         return av.VideoFrame.from_ndarray(frm, format="bgr24")
 
 # Input fields for language and singer
