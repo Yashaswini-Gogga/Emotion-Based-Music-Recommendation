@@ -1,5 +1,5 @@
 import streamlit as st
-from streamlit_webrtc import webrtc_streamer
+from streamlit_webrtc import webrtc_streamer,VideoProcessorBase
 import av
 import cv2 
 import numpy as np 
@@ -29,7 +29,7 @@ if not(emotion):
 else:
 	st.session_state["run"] = "false"
 
-class EmotionProcessor:
+class EmotionProcessor(VideoProcessorBase):
 	def recv(self, frame):
 		frm = frame.to_ndarray(format="bgr24")
 
