@@ -6,11 +6,14 @@ import numpy as np
 import mediapipe as mp
 from keras.models import load_model
 import webbrowser
+import logging
 import asyncio
+
+# Set logging level for debugging asyncio
+logging.basicConfig(level=logging.DEBUG)
 
 # Load model and labels
 model = load_model("model.h5")
-model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])  # Compile the model
 label = np.load("labels.npy")
 holistic = mp.solutions.holistic
 hands = mp.solutions.hands
@@ -97,18 +100,13 @@ class EmotionProcessor(VideoProcessorBase):
 lang = st.text_input("Language")
 singer = st.text_input("Singer")
 
-# Function to handle WebRTC lifecycle
-def start_webrtc_streamer():
-    try:
-        webrtc_streamer(key="unique_emotion_stream", desired_playing_state=True,
-                        video_processor_factory=EmotionProcessor)
-    except Exception as e:
-        st.error(f"Error starting WebRTC stream: {str(e)}")
-        print(f"Error: {str(e)}")
-
 # Conditionally run the WebRTC streamer
 if lang and singer and st.session_state["run"] != "false":
-    start_webrtc_streamer()
+    try:
+        webrtc_streamer(key=f"emotion_stream_{st.session_state['run']}", desired_playing_state=True,
+                        video_processor_factory=EmotionProcessor)
+    except Exception as e:
+        st.error(f"WebRTC streaming failed: {str(e)}")
 
 # Button to recommend songs
 btn = st.button("Recommend me songs")
@@ -122,3 +120,8 @@ if btn:
         webbrowser.open(f"https://www.youtube.com/results?search_query={lang}+{emotion}+song+{singer}")
         np.save("emotion.npy", np.array([""]))  # Clear emotion data after song recommendation
         st.session_state["run"] = "false"
+
+# Asyncio loop check and running if needed
+if not asyncio.get_event_loop().is_running():
+    loop = asyncio.get_event_loop()
+    loop.run_forever()
