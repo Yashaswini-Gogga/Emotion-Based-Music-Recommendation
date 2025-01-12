@@ -6,15 +6,16 @@ import numpy as np
 import mediapipe as mp
 from keras.models import load_model
 import webbrowser
-import logging
 import asyncio
 
-# Set logging level for debugging asyncio
-logging.basicConfig(level=logging.DEBUG)
+# Load model and labels with error handling
+try:
+    model = load_model("model.h5")
+    label = np.load("labels.npy")
+except Exception as e:
+    st.error(f"Error loading model or labels: {str(e)}")
+    raise e  # Ensure the program stops if loading fails
 
-# Load model and labels
-model = load_model("model.h5")
-label = np.load("labels.npy")
 holistic = mp.solutions.holistic
 hands = mp.solutions.hands
 holis = holistic.Holistic()
@@ -27,11 +28,12 @@ st.header("Emotion Based Music Recommender")
 if "run" not in st.session_state:
     st.session_state["run"] = "true"
 
-# Load emotion from file or set default
+# Load emotion from file or set default, with None check
 try:
     emotion = np.load("emotion.npy")[0]
-except:
+except Exception as e:
     emotion = ""
+    st.warning(f"Error loading emotion data: {str(e)}")
 
 # Set the session state based on emotion
 if not emotion:
@@ -41,6 +43,10 @@ else:
 
 class EmotionProcessor(VideoProcessorBase):
     def recv(self, frame):
+        if frame is None:
+            st.error("No frame received from the webcam.")
+            return None
+
         frm = frame.to_ndarray(format="bgr24")
 
         ##############################
@@ -78,13 +84,18 @@ class EmotionProcessor(VideoProcessorBase):
             lst = np.array(lst).reshape(1, -1)
 
             # Make prediction
-            pred = label[np.argmax(model.predict(lst))]
-            print(pred)
-            cv2.putText(frm, pred, (50, 50), cv2.FONT_ITALIC, 1, (255, 0, 0), 2)
+            try:
+                pred = label[np.argmax(model.predict(lst))]
+                print(pred)
+                cv2.putText(frm, pred, (50, 50), cv2.FONT_ITALIC, 1, (255, 0, 0), 2)
 
-            # Save emotion prediction to file
-            np.save("emotion.npy", np.array([pred]))
-
+                # Save emotion prediction to file
+                np.save("emotion.npy", np.array([pred]))
+            except Exception as e:
+                st.error(f"Error during emotion prediction: {str(e)}")
+        else:
+            st.warning("No face landmarks detected.")
+        
         # Draw landmarks on the frame
         drawing.draw_landmarks(frm, res.face_landmarks, holistic.FACEMESH_TESSELATION,
                                landmark_drawing_spec=drawing.DrawingSpec(color=(0, 0, 255), thickness=-1, circle_radius=1),
@@ -93,7 +104,6 @@ class EmotionProcessor(VideoProcessorBase):
         drawing.draw_landmarks(frm, res.right_hand_landmarks, hands.HAND_CONNECTIONS)
 
         ##############################
-
         return av.VideoFrame.from_ndarray(frm, format="bgr24")
 
 # Input fields for language and singer
@@ -103,8 +113,9 @@ singer = st.text_input("Singer")
 # Conditionally run the WebRTC streamer
 if lang and singer and st.session_state["run"] != "false":
     try:
-        webrtc_streamer(key=f"emotion_stream_{st.session_state['run']}", desired_playing_state=True,
-                        video_processor_factory=EmotionProcessor)
+        # Wrapping WebRTC inside asyncio run
+        asyncio.run(webrtc_streamer(key=f"emotion_stream_{st.session_state['run']}", desired_playing_state=True,
+                                    video_processor_factory=EmotionProcessor))
     except Exception as e:
         st.error(f"WebRTC streaming failed: {str(e)}")
 
@@ -120,8 +131,3 @@ if btn:
         webbrowser.open(f"https://www.youtube.com/results?search_query={lang}+{emotion}+song+{singer}")
         np.save("emotion.npy", np.array([""]))  # Clear emotion data after song recommendation
         st.session_state["run"] = "false"
-
-# Asyncio loop check and running if needed
-if not asyncio.get_event_loop().is_running():
-    loop = asyncio.get_event_loop()
-    loop.run_forever()
