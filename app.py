@@ -10,8 +10,8 @@ import webbrowser
 import tensorflow as tf
 
 # Paths to model and label files
-MODEL_PATH = "C:/Users/yasha/OneDrive/Desktop/emotion based music recommendor final/emotion-based-music-main/mine/model.h5"
-LABELS_PATH = "C:/Users/yasha/OneDrive/Desktop/emotion based music recommendor final/emotion-based-music-main/mine/labels.npy"
+MODEL_PATH = "model.h5"
+LABELS_PATH = ""
 
 # Load model and labels
 if not os.path.exists(MODEL_PATH):
