@@ -1,5 +1,6 @@
 import streamlit as st
 from streamlit_webrtc import webrtc_streamer
+webrtc_streamer(key="emotion_stream")
 import av
 import cv2
 import numpy as np
