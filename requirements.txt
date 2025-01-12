@@ -4,3 +4,4 @@ numpy
 opencv-python-headless
 mediapipe
 tensorflow
+libgl1-mesa-glx
