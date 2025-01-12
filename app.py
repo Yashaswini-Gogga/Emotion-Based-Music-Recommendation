@@ -6,7 +6,6 @@ import numpy as np
 import mediapipe as mp
 from keras.models import load_model
 import webbrowser
-import asyncio
 
 # Load model and labels with error handling
 try:
@@ -113,9 +112,8 @@ singer = st.text_input("Singer")
 # Conditionally run the WebRTC streamer
 if lang and singer and st.session_state["run"] != "false":
     try:
-        # Wrapping WebRTC inside asyncio run
-        asyncio.run(webrtc_streamer(key=f"emotion_stream_{st.session_state['run']}", desired_playing_state=True,
-                                    video_processor_factory=EmotionProcessor))
+        webrtc_streamer(key=f"emotion_stream_{st.session_state['run']}", desired_playing_state=True,
+                        video_processor_factory=EmotionProcessor)
     except Exception as e:
         st.error(f"WebRTC streaming failed: {str(e)}")
 
