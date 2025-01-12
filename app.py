@@ -9,7 +9,7 @@ from keras.models import load_model
 import webbrowser
 
 # Load model and labels
-model = load_model("")
+model = load_model("model.h5")
 label = np.load("labels.npy")
 holistic = mp.solutions.holistic
 hands = mp.solutions.hands
