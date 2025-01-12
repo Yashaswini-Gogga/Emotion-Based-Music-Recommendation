@@ -11,7 +11,7 @@ import tensorflow as tf
 
 # Paths to model and label files
 MODEL_PATH = "model.h5"
-LABELS_PATH = ""
+LABELS_PATH = "labels.npy"
 
 # Load model and labels
 if not os.path.exists(MODEL_PATH):
