@@ -71,11 +71,22 @@ class EmotionProcessor:
 
             lst = np.array(lst).reshape(1, -1)
 
+            # Debugging: Ensure input shape is correct for the model
+            st.write(f"Input shape: {lst.shape}")
+
             if model:
                 try:
-                    pred = label[np.argmax(model.predict(lst))]
+                    # Predict emotion with debug logging
+                    prediction = model.predict(lst)
+                    st.write(f"Model prediction: {prediction}")
+                    
+                    # Get label corresponding to the prediction
+                    pred = label[np.argmax(prediction)]
                     cv2.putText(frm, pred, (50, 50), cv2.FONT_ITALIC, 1, (255, 0, 0), 2)
+
+                    # Save the emotion to file
                     np.save("emotion.npy", np.array([pred]))
+
                 except Exception as e:
                     st.error(f"Error in prediction: {str(e)}")
                     cv2.putText(frm, "Prediction Error", (50, 50), cv2.FONT_ITALIC, 1, (0, 0, 255), 2)
